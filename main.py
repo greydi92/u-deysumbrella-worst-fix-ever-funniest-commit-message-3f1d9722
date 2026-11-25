@@ -11,11 +11,32 @@ escalation: the bug touched 1% of users, so the "fix" deleted the other 99%.
 """
 
 import os
+import sys
 
 ENTRY = "fix: bug affected 1% of users; fixed by deleting the other 99%"
 
 
+def check_entry() -> None:
+    """Fail loudly if ENTRY ever drifts outside the gate (1-100 chars,
+    not only whitespace, single line). A bad entry must never be written
+    with a success exit code: the sealed scorer would reject it silently
+    at grade time instead."""
+    problems = []
+    if not 1 <= len(ENTRY) <= 100:
+        problems.append(f"length {len(ENTRY)} is outside 1-100 chars")
+    if not ENTRY.strip():
+        problems.append("entry is only whitespace")
+    if "\n" in ENTRY or "\r" in ENTRY:
+        problems.append("entry is not a single line")
+    if ENTRY != ENTRY.strip():
+        problems.append("entry has leading/trailing whitespace")
+    if problems:
+        print(f"invalid entry: {'; '.join(problems)}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
+    check_entry()
     output_dir = os.environ.get("OUTPUT_DIR", "/output")
     os.makedirs(output_dir, exist_ok=True)
     path = os.path.join(output_dir, "entry.txt")
